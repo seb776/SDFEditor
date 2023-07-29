@@ -25,6 +25,7 @@ public:
     void SetDocStateChangeCallback(TDocStateChangeCallback aCallback) { mDocStateChangeCallback = aCallback; }
 
     void Save();
+    void SaveShader(const std::string& aFilePath);
     void Load();
 private:
 

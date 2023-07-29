@@ -6,6 +6,7 @@
 #include <SDFEditor/Utils/FileIO.h>
 
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <iostream>
 
@@ -170,6 +171,115 @@ void CSceneDocument::Save()
         SetPendingChanges(false, true);
     }
 }
+
+static const std::map<std::string, std::string>  sPrimitiveFunctions
+{
+    {
+        "ellipsoid",
+        "float sdellipsoid(vec3 p)\n"
+        "{\n"
+        "\treturn length(p)-1.;\n"
+        "}\n"
+    },
+    {
+        "box",
+        "float sdbox(vec3 p)\n"
+        "{\n"
+        "\tvec3 q = abs(p) - vec3(1.);\n"
+        "\treturn length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);\n"
+        "}\n"
+    },
+    {
+        "torus",
+        "float sdtorus(vec3 p)\n"
+        "{\n"
+        "// TODO\n"
+        "}\n"
+    },
+    {
+        "capsule",
+        "float sdcapsule(vec3 p)\n"
+        "{\n"
+        "// TODO\n"
+        "}\n"
+    }
+};
+
+void CSceneDocument::SaveShader(const std::string& aFilePath)
+{
+    std::list<std::string> primitivesToExport;
+    std::stringstream ss;
+    using namespace nlohmann;
+
+        ordered_json lDoc;
+        lDoc["version"] = 0.1;
+        ordered_json& lDocStrokes = lDoc["strokes"];
+
+        ss << "#define add(a, b) min(a, b)" << std::endl;
+        ss << "#define subtract(a, b) max(a, -b)" << std::endl;
+        ss << "#define intersect(a, b) max(a, b)" << std::endl;
+
+        ss << "float sdf(vec3 p)" << std::endl;
+        ss << "{" << std::endl;
+        ss << "\tfloat acc = 100000.;" << std::endl;
+
+        int i = 0;
+        for (auto& lStroke : mScene.mStrokesArray)
+        {
+            std::string posName = "p" + std::to_string(i);
+            ss << "\t" << "vec3 " << posName << " = p;" << std::endl;
+            ss << "\t" << posName << " -= vec3(" << lStroke.posb.x << ", " << lStroke.posb.y << ", " << lStroke.posb.z << ");" << std::endl;
+
+            ss << "\t" << posName << ".yz *= " << "r2d(" << lStroke.mEulerAngles.x << ");" << std::endl;
+            ss << "\t" << posName << ".xz *= " << "r2d(" << lStroke.mEulerAngles.y << ");" << std::endl;
+            ss << "\t" << posName << ".xy *= " << "r2d(" << lStroke.mEulerAngles.z << ");" << std::endl;
+
+            ss << "\t" << posName << " *= vec3(" << lStroke.param0.x << ", " << lStroke.param0.y << ", " << lStroke.param0.z << ");" << std::endl;
+
+            ss << "\t" << "float shape" << i << " = sd" << GetPrimitiveNameByCode(lStroke.id.x) << "(" << posName << ");" << std::endl;
+
+            ss << "\t" << "acc = " << GetOperationNameByCode(lStroke.id.y & EStrokeOp::OpsMaskMode) << "(acc, " << "shape" << i << ");" << std::endl;
+
+            primitivesToExport.push_back(GetPrimitiveNameByCode(lStroke.id.x));
+
+            //lDocStrokes.emplace_back();
+            //ordered_json& lDocStroke = lDocStrokes.back();
+
+            //lDocStroke["type"] = "stroke";
+            //lDocStroke["name"] = lStroke.mName;
+            //lDocStroke["position"] = ordered_json::array({ lStroke.posb.x, lStroke.posb.y, lStroke.posb.z });
+            //lDocStroke["rotation"] = ordered_json::array({ lStroke.mEulerAngles.x, lStroke.mEulerAngles.y, lStroke.mEulerAngles.z });
+            //lDocStroke["scale"] = ordered_json::array({ lStroke.param0.x, lStroke.param0.y, lStroke.param0.z });
+            //lDocStroke["blend"] = lStroke.posb.w;
+            //lDocStroke["round"] = lStroke.param0.w;
+            //lDocStroke["primitive_id"] = GetPrimitiveNameByCode(lStroke.id.x);
+            //lDocStroke["operation"] = GetOperationNameByCode(lStroke.id.y & EStrokeOp::OpsMaskMode);
+            //lDocStroke["mirror_x"] = bool(lStroke.id.y & EStrokeOp::OpMirrorX);
+            //lDocStroke["mirror_y"] = bool(lStroke.id.y & EStrokeOp::OpMirrorY);
+            i++;
+        }
+        ss << "\treturn acc;" << std::endl;
+        ss << "}" << std::endl;
+        primitivesToExport.sort();
+        primitivesToExport.unique();
+
+        std::stringstream primitiveFunctions;
+        for (auto& prim : primitivesToExport)
+        {
+            const auto& foundPrim = sPrimitiveFunctions.find(prim);
+            if (foundPrim != sPrimitiveFunctions.end())
+            {
+                primitiveFunctions << foundPrim->second << std::endl;
+            }
+        }
+
+        //save glsl
+        std::ofstream lOutputFile(aFilePath);
+        lOutputFile << 
+            primitiveFunctions.str() << std::endl << 
+            ss.str() << std::endl;
+}
+
 
 void CSceneDocument::Load()
 {

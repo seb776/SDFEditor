@@ -252,6 +252,11 @@ void CToolApp::SaveScene()
     mScene.mDocument->Save();
 }
 
+void CToolApp::SaveShaderScene(const std::string& aFilePath)
+{
+    mScene.mDocument->SaveShader(aFilePath);
+}
+
 void CToolApp::SaveScene(const std::string& aFilePath)
 {
     mScene.mDocument->SetFilePath(aFilePath);

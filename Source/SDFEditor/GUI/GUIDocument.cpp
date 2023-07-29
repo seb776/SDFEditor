@@ -85,6 +85,10 @@ namespace GUI
             LaunchSaveFileDialog(aToolApp);
         }
     }
+    void RequestSaveShaderFile(CToolApp& aToolApp)
+    {
+        LaunchSaveShaderFileDialog(aToolApp);
+    }
 
     void RequestNewFile(CToolApp& aToolApp)
     {
@@ -108,6 +112,11 @@ namespace GUI
     {
         uint32_t lFlags = ImGuiFileDialogFlags_ConfirmOverwrite;
         ImGuiFileDialog::Instance()->OpenModal("SaveStrokesFile", "Save Strokes File", ".strks", ".", 1, nullptr, lFlags);
+    }
+    void LaunchSaveShaderFileDialog(CToolApp& aToolApp)
+    {
+        uint32_t lFlags = ImGuiFileDialogFlags_ConfirmOverwrite;
+        ImGuiFileDialog::Instance()->OpenModal("SaveShaderFile", "Save Shader File", ".glsl", ".", 1, nullptr, lFlags);
     }
 
     void WantCloseDocument(CToolApp& aToolApp)
@@ -172,6 +181,13 @@ namespace GUI
             {
                 RequestSaveFile(aToolApp);
             }
+            // Save to glsl
+            ImGui::SameLine(0.0f, 10.0f);
+            if (TopBarButton(ICON_ARROW_DOWN_BIG))
+            {
+                RequestSaveShaderFile(aToolApp);
+            }
+            // end Save to glsl
             ImGui::SameLine(0.0f, 10.0f);
             if (TopBarButton(ICON_DOC_INV))
             {
@@ -247,6 +263,19 @@ namespace GUI
 
                 // Save scene data
                 aToolApp.SaveScene(filePathName);
+            }
+
+            ImGuiFileDialog::Instance()->Close();
+        }
+        if (ImGuiFileDialog::Instance()->Display("SaveShaderFile", lDialogsFlags, ImVec2(800, 600)))
+        {
+            if (ImGuiFileDialog::Instance()->IsOk())
+            {
+                std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+                std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+
+                // Save scene data
+                aToolApp.SaveShaderScene(filePathName);
             }
 
             ImGuiFileDialog::Instance()->Close();

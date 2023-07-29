@@ -19,6 +19,7 @@ namespace GUI
 
     void LaunchOpenFileDialog(CToolApp& aToolApp);
     void LaunchSaveFileDialog(CToolApp& aToolApp);
+    void LaunchSaveShaderFileDialog(CToolApp& aToolApp);
 
     void WantCloseDocument(CToolApp& aToolApp);
 

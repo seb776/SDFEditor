@@ -28,6 +28,7 @@ public:
     
     void SaveScene();
     void SaveScene(const std::string& aFilePath);
+    void SaveShaderScene(const std::string& aFilePath);
     void LoadScene(const std::string& aFilePath);
 
     void WantClose();
